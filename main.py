@@ -81,9 +81,9 @@ class User():
                     json.dump(data, file, indent=4)
                     file.truncate()
 
-        CurSong  = Song(songpath, song, flag)
+        CurSong  = Song(songpath, song)
         print(f"New song playing : {CurSong.name}")
-        CurSong.playsong(flag)
+        CurSong.playsong()
 
         return CurSong
         
@@ -141,7 +141,7 @@ class User():
 
 
 class Song():
-    def __init__(self, path, name, flag):
+    def __init__(self, path, name):
         self.path = path
         self.name = name
         self.paused = False
@@ -156,10 +156,10 @@ class Song():
         else:
             self.paused = True
 
-    def playsong(self, flag):
+    def playsong(self):
         print("Playing ", self.name)
         self.song = pydub.AudioSegment.from_file(self.path)
-        play_thread = threading.Thread(target=play, args=(self.song, lambda: running,))
+        play_thread = threading.Thread(target=play, args=(self.song))
         play_thread.daemon = True
         
         return play_thread
@@ -190,16 +190,12 @@ if __name__ == "__main__":
                 print(file)
         elif userinput == "play":
             usersong = input("song? ")
-            if usersong in files.keys():
-                if playing == True:
-                    del(SongObj2)
-
-                SongObj = CurUser.create_song_obj(usersong, files[usersong], playing)
+            SongObj = CurUser.create_song_obj(usersong, files[usersong])
             
                 
-                SongObj2 = SongObj.playsong(flag=playing)
+            SongObj2 = SongObj.playsong()
 
-                SongObj2.start()
-                playing = True
+            SongObj2.start()
+            playing = True
 
 
