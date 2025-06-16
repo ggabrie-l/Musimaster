@@ -1,10 +1,14 @@
 {
     "Ouch.wav": {
-        "timeslistened": 12,
+        "timeslistened": 16,
         "genre": "Sfx"
     },
     "dawnofchange.wav": {
-        "timeslistened": 37,
+        "timeslistened": 43,
         "genre": "Free"
+    },
+    "Copy.wav": {
+        "timeslistened": 1,
+        "genre": "Legal"
     }
 }

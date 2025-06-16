@@ -52,7 +52,7 @@ class User():
             if song.endswith('.wav') and song not in self.songsListened and song not in self.notListened:
                 self.notListened.append(song)
 
-    def create_song_obj(self, song, songpath, flag):
+    def create_song_obj(self, song, songpath):
         with open(self.jsonpath, 'r+') as file:
             jsonstring = file.read()
             data = json.loads(jsonstring)
@@ -82,12 +82,9 @@ class User():
                     file.truncate()
 
         CurSong  = Song(songpath, song)
-        print(f"New song playing : {CurSong.name}")
-        CurSong.playsong()
 
         return CurSong
         
-
     def load(self):
         with open(self.jsonpath, 'r') as file:
             jsonstring = file.read()
@@ -112,6 +109,7 @@ class User():
         print("Listened genres ", self.genresListened)
 
     def recommend(self):
+        # To be made : Order system for songs. Based on multiple genre musics order.
         shuffling = True
 
         top_three = []
@@ -119,8 +117,6 @@ class User():
         order = None
 
         Recommened_Song = None
-
-        # To be made : Order system for songs. Based on multiple genre musics order.
 
         if not shuffling:
             for i in self.topten[:3]:
@@ -159,7 +155,7 @@ class Song():
     def playsong(self):
         print("Playing ", self.name)
         self.song = pydub.AudioSegment.from_file(self.path)
-        play_thread = threading.Thread(target=play, args=(self.song))
+        play_thread = threading.Thread(target=play, args=(self.song,))
         play_thread.daemon = True
         
         return play_thread
@@ -171,17 +167,10 @@ if __name__ == "__main__":
     running = True
     
     CurUser = User("Gabriel")
-    CurSong = None
-
     CurUser.load()
 
-    SongObj2 = None
-
-    playing = False 
-    paused = False
-
-
-
+    AudioObj = None
+    SongObj = None
 
     while running:
         userinput = input("CMD: Pause (pause), Play (song name ), List (list)")
@@ -189,13 +178,13 @@ if __name__ == "__main__":
             for file in files:
                 print(file)
         elif userinput == "play":
-            usersong = input("song? ")
-            SongObj = CurUser.create_song_obj(usersong, files[usersong])
-            
-                
-            SongObj2 = SongObj.playsong()
+            usersong = input("song? \n")
 
-            SongObj2.start()
-            playing = True
+            # se der erro você deve ter colocado um nome que nao existe no diretorio.
+            AudioObj = CurUser.create_song_obj(usersong, files[usersong])
+        
+            SongObj = AudioObj.playsong()
+            SongObj.start()
+
 
 
