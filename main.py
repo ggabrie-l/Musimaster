@@ -1,4 +1,4 @@
-import os 
+import os, time
 import wave
 import pydub
 import matplotlib
@@ -10,8 +10,25 @@ from pydub.playback import play
 from threading import Thread
 import json
 import random
+import concurrent.futures
+import asyncio
+from multiprocessing import Process, Queue
+from multiprocessing import Pool
+
+import pydub.playback
 
 CurSong = None
+
+class CustomThread(Thread):
+    def __init__(self, group = None, target = None, name = None, args = ..., kwargs = None, *, daemon = None):
+        super().__init__(group, target, name, args, kwargs, daemon=daemon)
+        self._return = None
+
+    def run(self):
+        if self._target is not None:
+            self._return = self._target(*self._args, **self._kwargs)
+
+        return self._return
 
 def RetrieveFiles():
     curdir = os.getcwd()
@@ -110,7 +127,6 @@ class User():
 
     def recommend(self):
         # To be made : Order system for songs. Based on multiple genre musics order.
-        shuffling = True
 
         top_three = []
         top_three_genres = []
@@ -118,20 +134,6 @@ class User():
 
         Recommened_Song = None
 
-        if not shuffling:
-            for i in self.topten[:3]:
-                top_three.append(i[1]["genre"])
-
-            randomgenre = random.Random().randint(a=0, b=2)
-            for music in self.notListened:
-                pass
-
-        if shuffling:
-            randomgenre = random.Random().randint(a=0, b=2)
-            for music in self.songsListened:
-                if randomgenre == music[1]["genre"]:
-                    return music
-                    
 
 
 
@@ -142,9 +144,17 @@ class Song():
         self.name = name
         self.paused = False
         self.time = 0
-        self.song = None
         self.setName = "SongThread"
         self.play_thread = None
+        self.song = pydub.AudioSegment.from_file(self.path)
+        self.result = None
+        self.outputplayback = []
+        self.activate_song = None
+        self.queue = Queue()
+
+    def extractdata(self):
+        # To be made. Used to extract the ID3 data from mp3 files.
+        pass
 
     def pause(self):
         if self.paused:
@@ -153,24 +163,24 @@ class Song():
             self.paused = True
 
     def playsong(self):
-        print("Playing ", self.name)
-        self.song = pydub.AudioSegment.from_file(self.path)
-        play_thread = threading.Thread(target=play, args=(self.song,))
-        play_thread.daemon = True
-        
-        return play_thread
+        thread_play = threading.Thread(target=play, args=(self.song,))
+        thread_play.daemon = True
+        thread_play.start()
+        #thread_play.join()
+        #self.queue.get()
 
+        time.sleep(1.5)
 
-if __name__ == "__main__":
+        active =  pydub.playback.return_active()
+        return active
+
+def main():
     files = RetrieveFiles()
 
     running = True
     
     CurUser = User("Gabriel")
     CurUser.load()
-
-    AudioObj = None
-    SongObj = None
 
     while running:
         userinput = input("CMD: Pause (pause), Play (song name ), List (list)")
@@ -179,12 +189,12 @@ if __name__ == "__main__":
                 print(file)
         elif userinput == "play":
             usersong = input("song? \n")
-
             # se der erro você deve ter colocado um nome que nao existe no diretorio.
             AudioObj = CurUser.create_song_obj(usersong, files[usersong])
-        
-            SongObj = AudioObj.playsong()
-            SongObj.start()
+            activate_song = AudioObj.playsong()    
 
+        elif userinput == "current":
+            print(activate_song)
 
-
+if __name__ == "__main__":
+    main()
