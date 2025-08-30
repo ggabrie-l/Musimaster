@@ -12,6 +12,58 @@ from pydub.playback import play
 from threading import Thread
 import json
 import random
+import numpy as np
+
+import random
+import numpy as np
+
+ep = 0.5
+
+class Arm:
+    def __init__(self, song_name, listens):
+        self._listens = listens
+        self.click_curve = 0
+        self.true_mean = np.random.uniform(1, 10)
+        self.song_name = song_name
+
+    @property
+    def listens(self):
+        return self._listens
+
+    @listens.setter
+    def listens(self, new_value):
+        self._listens += new_value
+        self.click_curve = np.random.normal(self.true_mean)
+        
+    def average(self):
+        return self.click_curve / self._listens
+
+class MultiArmedBandit:
+    def __init__(self, arms):
+        self.arms = arms
+
+    # If a random number between 0 and 1 is less than epsilon, the function chooses a random arm to explore.
+
+    def compute_best(self, ep):
+        if np.random.rand() < ep:
+            best = np.random.choice(range(3)) # Exploration
+  
+            return self.arms[best]                       
+        else:                                                               # VS 
+            max_arm = max(arm.average() for arm in self.arms) # Exploitation
+            
+            maxes = []
+            for index, value in enumerate(self.arms):
+                if value.average() == max_arm:
+                    maxes.append(index)
+            
+            if len(maxes) > 1:
+                return self.arms[np.random.choice(maxes)]
+            else:
+                print(maxes)
+
+                print("Best Song is |")
+                return self.arms[maxes[0]]
 
 CurSong = None
 
@@ -22,6 +74,7 @@ def RetrieveFiles():
     for file in os.listdir(curdir):
         if file.endswith(".wav"):
             songs[file] = os.path.join(curdir, file)
+
 
     return songs
 
@@ -38,7 +91,8 @@ class User():
         self.genresListened = []
         self.cursong = None
         self.notListened = []
-
+        self.arms = []
+        self.MAB = None
         self.jsonpath = os.path.join(os.getcwd(), "data.json")
         self.genrespath = os.path.join(os.getcwd(), "genres.json")
 
@@ -94,6 +148,9 @@ class User():
 
             for i in data:
                 self.songsListened.append([i, data[i]])
+                arm = Arm(i, data[i]['timeslistened'])
+                self.arms.append(arm)
+
             print("Songs Listened ", self.songsListened)
 
             #self.songsListened = sorted(self.songsListened)
@@ -108,36 +165,23 @@ class User():
 
             self.toptengenres = self.genresListened[:10]
 
+        if self.MAB == None:
+            self.MAB = MultiArmedBandit(self.arms)
+            print("Created MAB")
+
         print("Listened genres ", self.genresListened)
 
     def recommend(self):
         # To be made : Order system for songs. Based on multiple genre musics order.
-        shuffling = True
+        shuffling = 2
 
         top_three = []
         top_three_genres = []
         order = None
 
-        Recommened_Song = None
-
-        if not shuffling:
-            for i in self.topten[:3]:
-                top_three.append(i[1]["genre"])
-
-            randomgenre = random.Random().randint(a=0, b=2)
-            for music in self.notListened:
-                pass
-
-        if shuffling:
-            randomgenre = random.Random().randint(a=0, b=2)
-            for music in self.songsListened:
-                if randomgenre == music[1]["genre"]:
-                    return music
+        Recommended_Song = MAB.compute_best(ep=0.3 * 2)
+        return Recommended_Song
                     
-
-
-
-
 class Song():
     def __init__(self, path, name):
         self.path = path
@@ -173,6 +217,11 @@ if __name__ == "__main__":
 
     AudioObj = None
     SongObj = None
+
+    MAB = MultiArmedBandit(CurUser.arms)
+
+    recommended = CurUser.recommend()
+    print("RECOMMENDED SONG ", recommended.song_name)
 
     while running:
         userinput = input("CMD: Pause (pause), Play (song name ), List (list)")
