@@ -17,6 +17,8 @@ import numpy as np
 import random
 import numpy as np
 
+from multiprocessing import Process
+
 ep = 0.5
 
 class Arm:
@@ -123,6 +125,7 @@ class User():
                 file.truncate()
                 self.songsListened.append(song)
             else:
+                print("Song to add ", song)
                 data[song]["timeslistened"] += 1
                 genre = data[song]["genre"]
                 file.seek(0) 
@@ -201,9 +204,11 @@ class Song():
     def playsong(self):
         print("Playing ", self.name)
         self.song = pydub.AudioSegment.from_file(self.path)
+        play_thread = Process(target=play, args=(self.song,))
+        '''
         play_thread = threading.Thread(target=play, args=(self.song,))
         play_thread.daemon = True
-        
+        '''
         return play_thread
 
 
@@ -230,12 +235,27 @@ if __name__ == "__main__":
                 print(file)
         elif userinput == "play":
             usersong = input("song? \n")
+            
 
             # se der erro você deve ter colocado um nome que nao existe no diretorio.
             AudioObj = CurUser.create_song_obj(usersong, files[usersong])
         
             SongObj = AudioObj.playsong()
             SongObj.start()
+
+        elif userinput == "rec":
+            song = CurUser.recommend()
+
+            AudioObj = CurUser.create_song_obj(song.song_name, files[song.song_name])
+        
+            SongObj = AudioObj.playsong()
+            SongObj.start()
+        
+        elif userinput == "stop":
+            SongObj.terminate()
+
+        
+        
 
 
 
